@@ -5,6 +5,19 @@ from os import path
 import sys
 import re
 # import click
+from pprint import pprint
+
+
+class bookmark(object):
+    """docstring for bookmark."""
+
+    def __init__(self, name, isonline=False):
+        self.name = name
+        self.isonline = isonline
+
+    def __repr__(self):
+        # print("{}, {}".format(self.name, self.isonline))
+        return f"{self.name}, {self.isonline}"
 
 
 class bookmarkchecker(object):
@@ -25,26 +38,30 @@ class bookmarkchecker(object):
 
     def getbookmarklinks(self):
         # regex = r"(https?:\/\/|\b(?:[a-z\d]+\.)(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:'.,<>?«»“”‘’]))?"
+
         regex = "(?<=A HREF=\")(.*)(?=\" ADD_DATE)"
         matches = re.findall(regex, self.bookmark_contents, re.MULTILINE | re.IGNORECASE)
-        '''
-        for i in matches:
-            print(i)
-        '''
-        for match in matches:
-            self.bookmark_repo[match] = []
 
-        # for key, value in self.bookmark_repo.items():
-        #     print("{}, {}".format(key, value))
+        id = 0
+
+        for match in matches:
+            print("{}, {}".format(id, match))
+            self.bookmark_repo[id] = bookmark(match)
+            id += 1
 
     def __repr__(self):
-        for key, value in self.bookmark_repo.items():
-            print(f"{key}, {value}")
+        pprint(self.bookmark_repo)
+        # return self.bookmark_repo
+        # print(self.bookmark_repo[id])
+
+        # for id, bm in self.bookmark_repo.items():
+        #     print("{}, {}", format(id, bm))
+
+        # for key, value in self.bookmark_repo.items():
+        #     print(f"{key}, {value}")
 
         # return self.bookmark_repo
 
-
-# bookmark = bookmarkchecker()
 
 # @click.command()
 # @click.option('--help', )
@@ -55,10 +72,10 @@ def main():
         print("blah")
         exit()
     if path.exists(sys.argv[1]):
-        bookmark = bookmarkchecker(sys.argv[1])
-        bookmark.openbookmark()
-        bookmark.getbookmarklinks()
-        print(bookmark)
+        bm_checker = bookmarkchecker(sys.argv[1])
+        bm_checker.openbookmark()
+        bm_checker.getbookmarklinks()
+        # print(bm_checker)
     else:
         print("Path is not valid.")
 
