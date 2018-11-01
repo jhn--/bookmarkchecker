@@ -4,6 +4,7 @@
 from os import path
 import sys
 import re
+import requests
 # import click
 from pprint import pprint
 
@@ -45,9 +46,12 @@ class bookmarkchecker(object):
         id = 0
 
         for match in matches:
-            print("{}, {}".format(id, match))
+            # print("{}, {}".format(id, match))
             self.bookmark_repo[id] = bookmark(match)
             id += 1
+
+    def checkbookmarks(self):
+        pass
 
     def __repr__(self):
         pprint(self.bookmark_repo)
@@ -62,7 +66,6 @@ class bookmarkchecker(object):
 
         # return self.bookmark_repo
 
-
 # @click.command()
 # @click.option('--help', )
 
@@ -75,7 +78,7 @@ def main():
         bm_checker = bookmarkchecker(sys.argv[1])
         bm_checker.openbookmark()
         bm_checker.getbookmarklinks()
-        # print(bm_checker)
+        print(bm_checker)
     else:
         print("Path is not valid.")
 
