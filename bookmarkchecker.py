@@ -5,10 +5,17 @@ import sys
 import re
 import requests
 import json
+from collections import OrderedDict
 # import click
-from pprint import pprint
+# from pprint import pprint
+
 
 HTTP_CODES = [200, 201, 202, 203, 204, 205, 206, 207, 208, 226, 300, 301, 302, 303, 304, 305, 306, 307, 308, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 420, 422, 423, 424, 425, 426, 428, 429, 431, 444, 449, 450, 451, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 598, 599]
+
+
+def jsonDefault(OrderedDict):
+    return OrderedDict.__dict__
+
 
 
 class bookmark(object):
@@ -24,8 +31,9 @@ class bookmark(object):
         # Store exception message.
         self.exception_msg = ''
 
-    def __str__(self):
-        return f"{self.name}, {self.isonline}, {self.response_code}"
+    def __repr__(self):
+        return json.dumps(self, default=jsonDefault, indent=4)
+        # return f"{self.name}, {self.isonline}, {self.response_code}"
 
     def update_isonline(self, boolean):
         self.isonline = boolean
@@ -52,10 +60,14 @@ class bookmarkchecker(object):
         '''
         # print("a")
         with open(self.bookmark_path, 'r') as fp:
+            # read contents of bookmark
+            # definitely will become a memory hogger, not good.
             self.bookmark_contents = fp.read()
         fp.close()
+
+        return True
         # print(self.bookmark_contents)
-        return self.bookmark_contents
+        # return self.bookmark_contents
 
     def getbookmarklinks(self):
         '''
@@ -69,6 +81,7 @@ class bookmarkchecker(object):
             self.bookmark_id += 1
 
         self.numofbookmarks = len(self.bookmark_repo)
+        return True
 
     def checkbookmarks(self):
         checker_timeout = 5
@@ -86,10 +99,13 @@ class bookmarkchecker(object):
             finally:
                 print('{} {}'.format(key, self.bookmark_repo[key]))
 
-    def repo_contents(self):
-        for key in self.bookmark_repo.keys():
-            print('{}, {} \n'.format(key, self.bookmark_repo[key]))
-            print('\n')
+    def __repr__(self):
+        return json.dumps(self, default=jsonDefault, indent=4)
+
+#    def repo_contents(self):
+#        for key in self.bookmark_repo.keys():
+#            print('{}, {} \n'.format(key, self.bookmark_repo[key]))
+#            print('\n')
 
     def export_results(self, export_path):
         # skipping checks for now
@@ -109,18 +125,30 @@ class bookmarkchecker(object):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("blah")
-        exit()
+    if len(sys.argv) != 3:
+        print(
+            '''
+            main(): incorrect set of arguments, run it like this - \
+            bookmarkchecker.py /path/to/exported_bookmarks.html \
+            /path/to/results.json
+            '''
+        )
+        return False
     if path.exists(sys.argv[1]):
-        bm_checker = bookmarkchecker(sys.argv[1])
-        bm_checker.openbookmark()
-        bm_checker.getbookmarklinks()
-        bm_checker.checkbookmarks()
-        bm_checker.repo_contents()
-        bm_checker.export_results('~/bookmarkchecker_results.json')
+        if path.exists(sys.argv[2]):
+            bm_checker = bookmarkchecker(sys.argv[1])
+            bm_checker.openbookmark()
+            bm_checker.getbookmarklinks()
+            bm_checker.checkbookmarks()
+            bm_checker.repo_contents()
+            bm_checker.export_results(sys.argv[2])
+            return True
+        else:
+            print("main(): Path \'{}\' is not valid".format(sys.argv[2]))
+            return False
     else:
-        print("Path is not valid.")
+        print("main(): Path \'{}\' is not valid".format(sys.argv[1]))
+        return False
 
 
 if __name__ == '__main__':
