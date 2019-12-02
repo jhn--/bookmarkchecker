@@ -5,7 +5,9 @@ import sys
 import re
 from bs4 import BeautifulSoup
 from pprint import pprint
-import time
+from time import strftime, localtime
+import requests
+# import threading
 
 
 class bookmarkChecker():
@@ -29,6 +31,13 @@ class bookmarkChecker():
         """
         return self.soup.title.text
     
+    def urlStatus(self):
+        """
+        even though urlChecker() prints out the url and status 
+        """
+        for bookmark in self.details:
+            print(f'{0}\t|\t{1}').format(bookmark['url'], bookmark['res_code'])
+
     def populateDetails(self):
         """
         populate bookmarkChecker.details with all hyperlinks in bookmark
@@ -40,18 +49,35 @@ class bookmarkChecker():
             self.details[url[0]]['add_date'] = convertEpochtoLocaltime(int(url[1].get('add_date')))
             self.details[url[0]]['title'] = url[1].get_text()
 
+    def urlChecker(self, url, checktimeout=3):
+        """
+        checks url by sending a request.get() with a timeout of 3 seconds
+        """
+        print(f'checking url: {url}')
+        try:
+            r = requests.get(url, timeout=checktimeout)
+        except Exception as e:
+            status_code = '999'
+        else:
+            status_code = r.status_code
+        finally:
+            print(f'checked {url}, status code: {status_code}')
+            return str(status_code)
+
     def checkLinks(self):
         """
         here we will traverse through the links and check if we get any responses from the urls
         """
-        pass
+        for i in self.details:
+            # t = threading.Thread(target=self.urlChecker, args=(i['url']))
+            self.details[i]['res_code'] = self.urlChecker(self.details[i]['url'])
 
 
 def convertEpochtoLocaltime(epoch):
     """
     convert epoch time to local time
     """
-    return time.strftime('%Y-%m-%d %H:%M:%S %z', time.localtime(epoch))
+    return strftime('%Y-%m-%d %H:%M:%S %z', localtime(epoch))
 
 
 def main():
@@ -63,10 +89,11 @@ def main():
         # exit()
     if path.exists(sys.argv[1]):
         bm_checker = bookmarkChecker(sys.argv[1])
-        print(f'{bm_checker.title}')
-        print(f'{bm_checker.bookmark_path}')
+        # print(f'{bm_checker.title}')
+        # print(f'{bm_checker.bookmark_path}')
         bm_checker.populateDetails()
-        print(bm_checker.details[0])
+        # print(bm_checker.details[0])
+        bm_checker.checkLinks()
     else:
         print("{} is not valid".format(sys.argv[1]))
 
