@@ -14,19 +14,13 @@ class bookmarkChecker():
     """
     bookmarkChecker object
     """
+
     def __init__(self, bookmark_path):
         """
         initialise bookmarkChecker object
         """
         self.bookmark_path = bookmark_path
         self.details = {}
-
-    @property
-    def title(self):
-        """
-        test function w @property decorator, test function
-        """
-        return self.soup.title.text
 
     @property
     def get_details(self):
@@ -41,7 +35,7 @@ class bookmarkChecker():
         and status
         """
         for bookmark in self.details:
-            print(f"{bookmark['url']}\t|\t{bookmark['res_code']}")
+            print(f"{self.details[bookmark]['url']}\t|\t{self.details[bookmark]['resp_code']}")
 
     def populateDetails(self):
         """
@@ -54,23 +48,28 @@ class bookmarkChecker():
         for url in enumerate(self.bookmark_ahref):
             self.details[url[0]] = {}
             self.details[url[0]]['url'] = url[1].get('href')
-            self.details[url[0]]['add_date'] = \
+            self.details[url[0]]['add_date'] = {}
+            self.details[url[0]]['add_date']['epoch'] = \
+                url[1].get('add_date')
+            self.details[url[0]]['add_date']['localtime'] = \
                 convertEpochtoLocaltime(int(url[1].get('add_date')))
             self.details[url[0]]['title'] = url[1].get_text()
+            self.details[url[0]]['resp_code'] = None
 
-    async def urlChecker(self, session, urlid, url, checktimeout=5):
+    async def urlChecker(self, session, urlid, url, checktimeout=15):
         """
-        checks url by sending a request.get() with a timeout of 5 seconds
+        checks url by sending a request.get() with a timeout of 15 seconds
         """
-        # print(f"\033[1;32;40m url: {url}")
+        print(f"\033[1;32;40m Checking url: {url}")
         try:
-            # async with session.get(url, timeout=checktimeout) as r:
             async with session.request("GET", url, timeout=checktimeout) as r:
-                # print(f"\033[1;36;40m url: {url} --> status code: {r.status}")
+                print(f"\033[1;36;40m url: {url} -->\
+                   status code: {r.status}")
                 status = r.status
         except Exception as e:
-            # print(f"\033[1;36;40m url: {url} --> error: {repr(e)}")
+            print(f"\033[1;36;40m url: {url} --> error: {repr(e)}")
             status = 999
+            self.details[urlid]['exception'] = repr(e)
         finally:
             self.details[urlid]['resp_code'] = status
 
@@ -82,11 +81,18 @@ class bookmarkChecker():
         async with aiohttp.ClientSession() as session:
             tasks = []
             for i in self.details:
-                # self.details[i]['res_code'] = await asyncio.gather(self.urlChecker(session, self.details[i]['url']))
                 tasks.append(self.urlChecker(
                     session, i, self.details[i]['url'], 30))
 
             await asyncio.gather(*tasks)
+
+    def getRespCodeStats(self):
+        """
+        WIP, im thinking of an efficient way to properly to discover response
+        codes and count them. The code below is a place holder, but it works.
+        """
+        return sum(value['resp_code'] == 200
+                   for value in self.details.values())
 
 
 def convertEpochtoLocaltime(epoch):
@@ -107,8 +113,9 @@ def main():
         bm_checker = bookmarkChecker(sys.argv[1])
         bm_checker.populateDetails()
         asyncio.get_event_loop().run_until_complete(bm_checker.checkLinks())
-        # pprint(bm_checker.details)
-        pprint(bm_checker.get_details)
+        # pprint(bm_checker.get_details)
+        # bm_checker.urlStatus()
+        # print(bm_checker.getStats())
     else:
         print("{} is not valid".format(sys.argv[1]))
 
