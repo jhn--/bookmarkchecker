@@ -5,6 +5,7 @@ import sys
 from os import path
 from pprint import pprint
 from time import localtime, strftime
+from collections import Counter
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -21,6 +22,7 @@ class bookmarkChecker():
         """
         self.bookmark_path = bookmark_path
         self.details = {}
+        self.c = None
 
     @property
     def get_details(self):
@@ -56,18 +58,18 @@ class bookmarkChecker():
             self.details[url[0]]['title'] = url[1].get_text()
             self.details[url[0]]['resp_code'] = None
 
-    async def urlChecker(self, session, urlid, url, checktimeout=15):
+    async def urlChecker(self, session, urlid, url, checktimeout=30):
         """
-        checks url by sending a request.get() with a timeout of 15 seconds
+        checks url by sending a request.get() with a timeout of 30 seconds
         """
         print(f"\033[1;32;40m Checking url: {url}")
         try:
             async with session.request("GET", url, timeout=checktimeout) as r:
-                print(f"\033[1;36;40m url: {url} -->\
-                   status code: {r.status}")
+                # print(f"\033[1;36;40m url: {url} -->\
+                #    status code: {r.status}")
                 status = r.status
         except Exception as e:
-            print(f"\033[1;36;40m url: {url} --> error: {repr(e)}")
+            print(f"\033[1;31;40m url: {url} --> error: {repr(e)}")
             status = 999
             self.details[urlid]['exception'] = repr(e)
         finally:
@@ -88,11 +90,11 @@ class bookmarkChecker():
 
     def getRespCodeStats(self):
         """
-        WIP, im thinking of an efficient way to properly to discover response
-        codes and count them. The code below is a place holder, but it works.
+        using collections.Counter to get the list of resp_codes and returning them
+        # todo - present the data in prettier way
         """
-        return sum(value['resp_code'] == 200
-                   for value in self.details.values())
+        self.c = Counter([value['resp_code'] for value in self.details.values()])
+        return self.c.items()
 
 
 def convertEpochtoLocaltime(epoch):
@@ -116,6 +118,7 @@ def main():
         # pprint(bm_checker.get_details)
         # bm_checker.urlStatus()
         # print(bm_checker.getStats())
+        print(bm_checker.getRespCodeStats())
     else:
         print("{} is not valid".format(sys.argv[1]))
 
