@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+from datetime import date, datetime
 from os import path
 from pprint import pprint
 from time import localtime, strftime
@@ -23,6 +24,7 @@ class bookmarkChecker():
         self.bookmark_path = bookmark_path
         self.details = {}
         self.c = None
+        self.bookmarkstats = {}
 
     @property
     def get_details(self):
@@ -62,14 +64,14 @@ class bookmarkChecker():
         """
         checks url by sending a request.get() with a timeout of 30 seconds
         """
-        print(f"\033[1;32;40m Checking url: {url}")
+        # print(f"\033[1;32;40m Checking url: {url}")
         try:
             async with session.request("GET", url, timeout=checktimeout) as r:
                 # print(f"\033[1;36;40m url: {url} -->\
                 #    status code: {r.status}")
                 status = r.status
         except Exception as e:
-            print(f"\033[1;31;40m url: {url} --> error: {repr(e)}")
+            # print(f"\033[1;31;40m url: {url} --> error: {repr(e)}")
             status = 999
             self.details[urlid]['exception'] = repr(e)
         finally:
@@ -96,6 +98,26 @@ class bookmarkChecker():
         self.c = Counter([value['resp_code'] for value in self.details.values()])
         return self.c.items()
 
+    @property
+    def getBookmarkStats(self):
+        """
+        shows how many bookmarks were added every year.
+        """
+        thisyear = date.today().year
+        nextyear = None
+        for year in range(thisyear, thisyear-10, -1):
+            if nextyear is None:
+                thisyear_epoch = int(datetime(year, 1, 1 ,0, 0, 0).timestamp())
+                bookmarks_in_year = [k[0] for k in self.details.items() if int(k[1]['add_date']['epoch']) >= thisyear_epoch]
+            else:
+                thisyear_epoch = int(datetime(year, 1, 1 ,0, 0, 0).timestamp())
+                nextyear_epoch = int(datetime(nextyear, 1, 1 ,0, 0, 0).timestamp())
+                bookmarks_in_year = [k[0] for k in self.details.items() if (int(k[1]['add_date']['epoch']) >= thisyear_epoch and int(k[1]['add_date']['epoch']) < nextyear_epoch)]
+            nextyear = year
+            self.bookmarkstats[year] = (len(bookmarks_in_year), bookmarks_in_year)
+        
+        return [(kv[0], kv[1][0]) for kv in self.bookmarkstats.items()]
+
 
 def convertEpochtoLocaltime(epoch):
     """
@@ -119,6 +141,7 @@ def main():
         # bm_checker.urlStatus()
         # print(bm_checker.getStats())
         print(bm_checker.getRespCodeStats())
+        pprint(bm_checker.getBookmarkStats)
     else:
         print("{} is not valid".format(sys.argv[1]))
 
