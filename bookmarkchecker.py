@@ -4,9 +4,9 @@ import asyncio
 import sys
 from datetime import date, datetime
 from os import path
-from pprint import pprint
 from time import localtime, strftime
 from collections import Counter
+import matplotlib.pyplot as plt
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -90,6 +90,7 @@ class bookmarkChecker():
 
             await asyncio.gather(*tasks)
 
+    @property
     def getRespCodeStats(self):
         """
         using collections.Counter to get the list of resp_codes and returning them
@@ -115,9 +116,22 @@ class bookmarkChecker():
                 bookmarks_in_year = [k[0] for k in self.details.items() if (int(k[1]['add_date']['epoch']) >= thisyear_epoch and int(k[1]['add_date']['epoch']) < nextyear_epoch)]
             nextyear = year
             self.bookmarkstats[year] = (len(bookmarks_in_year), bookmarks_in_year)
-        
-        return [(kv[0], kv[1][0]) for kv in self.bookmarkstats.items()]
 
+        w = 20
+        h = 20
+        d = 70
+        plt.figure(figsize=(w, h), dpi=d)
+        plt.xlabel("Year")
+        plt.ylabel("Bookmarks added")
+        years = [year for year in self.bookmarkstats.keys()]
+        numofbookmarks = [bookmarkcount[1][0] for bookmarkcount in self.bookmarkstats.items()]
+
+        plt.plot(years, numofbookmarks)
+        for x, y in zip(years, numofbookmarks):
+            plt.text(x, y, f"{y}")
+        plt.show()
+        # return self.bookmarkstats
+        return [(kv[0], kv[1][0]) for kv in self.bookmarkstats.items()]
 
 def convertEpochtoLocaltime(epoch):
     """
@@ -140,8 +154,8 @@ def main():
         # pprint(bm_checker.get_details)
         # bm_checker.urlStatus()
         # print(bm_checker.getStats())
-        print(bm_checker.getRespCodeStats())
-        pprint(bm_checker.getBookmarkStats)
+        print(bm_checker.getRespCodeStats)
+        print(bm_checker.getBookmarkStats)
     else:
         print("{} is not valid".format(sys.argv[1]))
 
