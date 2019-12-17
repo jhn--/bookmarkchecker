@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import asyncio
 import sys
 from datetime import date, datetime
@@ -7,9 +8,14 @@ from os import path
 from time import localtime, strftime
 from collections import Counter
 import matplotlib.pyplot as plt
+import json
 
 import aiohttp
 from bs4 import BeautifulSoup
+
+
+CONSENT = {'y', '', 'yes'}
+CHOICES = {i for i in range(4)}
 
 
 class bookmarkChecker():
@@ -59,6 +65,7 @@ class bookmarkChecker():
                 convertEpochtoLocaltime(int(url[1].get('add_date')))
             self.details[url[0]]['title'] = url[1].get_text()
             self.details[url[0]]['resp_code'] = None
+        return 0
 
     async def urlChecker(self, session, urlid, url, checktimeout=30):
         """
@@ -76,6 +83,7 @@ class bookmarkChecker():
             self.details[urlid]['exception'] = repr(e)
         finally:
             self.details[urlid]['resp_code'] = status
+        return 0
 
     async def checkLinks(self):
         """
@@ -87,7 +95,6 @@ class bookmarkChecker():
             for i in self.details:
                 tasks.append(self.urlChecker(
                     session, i, self.details[i]['url'], 30))
-
             await asyncio.gather(*tasks)
 
     @property
@@ -131,7 +138,31 @@ class bookmarkChecker():
             plt.text(x, y, f"{y}")
         plt.show()
         # return self.bookmarkstats
-        return [(kv[0], kv[1][0]) for kv in self.bookmarkstats.items()]
+        # return [(kv[0], kv[1][0]) for kv in self.bookmarkstats.items()]
+        return 0
+    
+    def exportJSON(self, output):
+        with open(output, 'w') as jsonfp:
+            json.dump(self.details, jsonfp)
+        return 0
+
+    def exportDetails(self):
+        print("aloha")
+        output = input("Please enter a destination filename (ie. /home/user/out.json): ")
+        if path.exists(output):
+            overwrite = input("File exists, overwrite? [Y/n]: ")
+            if self.overwrite.lower() in CONSENT:
+                self.exportJSON(output)
+                print(f'File {output} has been updated.')
+                return 0
+            else:
+                print('Exiting....')
+                return 1
+        else:
+            self.exportJSON(output)
+            print(f'File {output} has been created.')
+            return 0
+
 
 def convertEpochtoLocaltime(epoch):
     """
@@ -140,25 +171,54 @@ def convertEpochtoLocaltime(epoch):
     return strftime('%Y-%m-%d %H:%M:%S %z', localtime(epoch))
 
 
-def main():
-    if len(sys.argv) != 2:
-        print('Need path to bookmark file.')
-        print('ie. ')
-        print('python3 /path/to/bookmarkchecker.py /path/to/bookmark.html')
-        return False
-        # exit()
-    if path.exists(sys.argv[1]):
-        bm_checker = bookmarkChecker(sys.argv[1])
-        bm_checker.populateDetails()
-        asyncio.get_event_loop().run_until_complete(bm_checker.checkLinks())
-        # pprint(bm_checker.get_details)
-        # bm_checker.urlStatus()
-        # print(bm_checker.getStats())
-        print(bm_checker.getRespCodeStats)
-        print(bm_checker.getBookmarkStats)
+def main(args):
+    if (args.bookmark and args.json) or (not args.bookmark and not args.json):
+        print("""
+            Please load EITHER -
+            1) An exported html file from Chrome
+            or
+            2) A json file exported from this program
+            """)
+        return 1
+    elif (args.bookmark and not args.json):
+        # print(f'{args}')
+        bmc = bookmarkChecker(args.bookmark)
+        print("Bookmark is being verified....")
+        if bmc.populateDetails() == 0:
+            print("Bookmark has been successfully verified, checking links....")
+            asyncio.get_event_loop().run_until_complete(bmc.checkLinks())
+            choice = None
+            while choice not in CHOICES:
+                choice = input("""
+                    Bookmark links have been checked.
+                    Select any of the following: 
+                    1) Export bookmarks to a json file.
+                    2) View the graph of the number of bookmarks added per year.
+                    3) View the number of response codes.
+                    0) Exit the program.
+                    >>> 
+                    """)
+                if choice == '1':
+                    bmc.exportDetails()
+                elif choice == '2':
+                    bmc.getBookmarkStats
+                elif choice == '3':
+                    print(bmc.getRespCodeStats)
+                elif choice == '0':
+                    print('Exiting....')
+                    return 0
+        else:
+            print("Exported html file is unusable.")
+            return 1
+    elif (not args.bookmark and args.json):
+        print(f'{args}')
     else:
-        print("{} is not valid".format(sys.argv[1]))
+        print(f'{args}')
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Bookmark checker for chrome bookmarks.")
+    parser.add_argument("-b", "--bookmark", action="store", help="Load exported bookmark html file.")
+    parser.add_argument("-j", "--json", action="store", help="Load json file.")
+    args = parser.parse_args()
+    main(args)
