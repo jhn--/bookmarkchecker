@@ -9,6 +9,7 @@ from time import localtime, strftime
 from collections import Counter
 import matplotlib.pyplot as plt
 import json
+from numpy import arange
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -104,7 +105,30 @@ class bookmarkChecker():
         # todo - present the data in prettier way
         """
         self.c = Counter([value['resp_code'] for value in self.details.values()])
-        return self.c.items()
+        # print(self.c)
+        response_codes = [rc for rc in self.c.keys()]
+        num_of_sites = [numofsites for numofsites in self.c.values()]
+
+        ## pie chart
+        fig1, ax1 = plt.subplots()
+        ax1.pie(num_of_sites, labels = response_codes)
+        ax1.axis('equal')
+        plt.show()
+
+        #bar graph
+        # plt.rcdefaults()
+        # fig, ax = plt.subplots()
+
+        # y_pos = arange(len(response_codes))
+        
+        # ax.barh(response_codes, width=num_of_sites, height=1, align='center')
+        # ax.set_yticks(y_pos)
+        # ax.set_yticklabels(response_codes)
+        # ax.invert_yaxis()
+        # ax.set_xlabel('Number of websites')
+
+        # plt.show()
+        return 0
 
     @property
     def getBookmarkStats(self):
@@ -131,10 +155,10 @@ class bookmarkChecker():
         plt.xlabel("Year")
         plt.ylabel("Bookmarks added")
         years = [year for year in self.bookmarkstats.keys()]
-        numofbookmarks = [bookmarkcount[1][0] for bookmarkcount in self.bookmarkstats.items()]
+        num_of_bookmarks = [bookmarkcount[1][0] for bookmarkcount in self.bookmarkstats.items()]
 
-        plt.plot(years, numofbookmarks)
-        for x, y in zip(years, numofbookmarks):
+        plt.plot(years, num_of_bookmarks)
+        for x, y in zip(years, num_of_bookmarks):
             plt.text(x, y, f"{y}")
         plt.show()
         # return self.bookmarkstats
