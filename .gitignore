@@ -1,1 +1,12 @@
-__pycache__/bookmarkchecker.cpython-37.pyc
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+
+# bookmarks
+bookmark*
+
+# exported data
+out*.json*

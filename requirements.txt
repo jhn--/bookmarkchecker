@@ -1,0 +1,4 @@
+aiohttp>=3.9
+beautifulsoup4>=4.12
+matplotlib>=3.8
+numpy>=1.26
